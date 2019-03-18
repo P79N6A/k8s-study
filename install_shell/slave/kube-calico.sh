@@ -9,8 +9,8 @@ LOCAL_IP_ADDR=$2
 cat > /usr/lib/systemd/system/kube-calico.service <<EOF
 [Unit]
 Description=calico node
-After=/usr/lib/systemd/system/docker.service
-Requires=/usr/lib/systemd/system/docker.service
+After=docker.service
+Requires=docker.service
 [Service]
 User=root
 PermissionsStartOnly=true

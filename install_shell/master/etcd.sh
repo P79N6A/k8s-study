@@ -5,6 +5,7 @@ set -o errexit
 LOCAL_IP_ADDR=$1
 ETCD_URL=$2
 ETCD_PORT=$3
+ROOT_PATH=$4
 
 ETCD_DOWNLOAD_URL="https://storage.googleapis.com/etcd"
 ETCD_VERSION="v3.3.8"

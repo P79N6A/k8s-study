@@ -6,7 +6,7 @@ ETCD_URL=$3
 
 mkdir -p /var/lib/kubelet
 mkdir -p /etc/kubernetes
-mkdir -p /etpc/cni/net.d
+mkdir -p /etc/cni/net.d
 
 
 # kubelet.setvice 配置文件

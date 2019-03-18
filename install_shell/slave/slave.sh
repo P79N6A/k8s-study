@@ -3,8 +3,15 @@ set -o errexit
 
 # 当前目录
 ROOT_PATH=$(cd `dirname $0`; pwd)
-ETCD_URL="192.168.56.101:2379"
-MASTER_URL="192.168.56.101:8080"
+
+read -p "Input Etcd url(192.168.56.102:2379):" ETCD_URL
+
+echo "Etcd url is: ${ETCD_URL}"
+
+read -p "Input Master url(192.168.56.102:8080):" MASTER_URL
+
+echo "Master url is: ${MASTER_URL}"
+
 
 LOCAL_IP_ADDR=`ip a | grep inet | grep -v inet6 | grep -v 127 | grep 192.168.56 | sed 's/^[ \t]*//g' | cut -d ' ' -f2 | cut -d '/' -f1`
 

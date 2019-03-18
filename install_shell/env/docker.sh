@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 set -o errexit
-systemctl disable firewalld
-systemctl stop firewalld
 
 yum remove docker \
 docker-client \
@@ -20,12 +18,6 @@ lvm2
 yum-config-manager \
 --add-repo \
 https://download.docker.com/linux/centos/docker-ce.repo
-
-yum-config-manager --enable docker-ce-nightly
-
-yum-config-manager --enable docker-ce-test
-
-yum-config-manager --disable docker-ce-nightly
 
 yum install docker-ce docker-ce-cli containerd.io
 

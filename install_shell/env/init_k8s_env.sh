@@ -21,5 +21,6 @@ vm.swappiness=0
 EOF
 sysctl -p /etc/sysctl.d/k8s.conf
 
+yum install net-tools wget
 
 

@@ -30,7 +30,7 @@ read -p "Input http proxy address:" HTTP_PROXY
 echo "Your http proxy address:${HTTP_PROXY}"
 
 mkdir -p /etc/systemd/system/docker.service.d
-cat > /etc/systemd/system/docker.service.d/http-proxy.conf <<<EOF
+cat   > /etc/systemd/system/docker.service.d/http-proxy.conf <<EOF
 [Service]
 Environment="HTTP_PROXY=${HTTP_PROXY}" "HTTPS_PROXY=${HTTPS_PROXY}" "NO_PROXY=127.0.0.1,localhost"
 EOF

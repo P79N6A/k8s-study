@@ -1,0 +1,6 @@
+FROM golang
+WORKDIR /go/app/demo
+COPY ../demo/ /go/app/demo/
+RUN export GO111MODULE=on && go mod tidy
+# 交叉编译
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0  go build -o /go/app/godemo

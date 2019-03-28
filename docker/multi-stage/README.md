@@ -16,4 +16,7 @@ Docker 多阶段构建
 2. 在一个dockerfile里面写多个阶段
 
 
+tips
+
+go完全静态编译: CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' .
 

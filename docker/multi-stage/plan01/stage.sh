@@ -9,8 +9,8 @@ echo "=========================Build go-demo-step1:build images=================
 
 
 docker build --no-cache -t go-demo-step1:build . -f Dockerfile.step1 \
---build-arg HTTP_PROXY=http://web-proxy.tencent.com:8080 \
---build-arg HTTPS_PROXY=http://web-proxy.tencent.com:8080
+--build-arg HTTP_PROXY=http://127.0.0.1:8080  \
+--build-arg HTTPS_PROXY=http://127.0.0.1:8080 
 
 docker create --name step1 go-demo-step1:build
 
@@ -21,8 +21,8 @@ docker rm -f step1
 echo "=========================Building go-demo-step2:run images==================================";
 
 docker build --no-cache -t go-demo-step2:run . -f Dockerfile.step2  \
---build-arg HTTP_PROXY=http://web-proxy.tencent.com:8080 \
---build-arg HTTPS_PROXY=http://web-proxy.tencent.com:8080
+--build-arg HTTP_PROXY=http://127.0.0.1:8080  \
+--build-arg HTTPS_PROXY=http://127.0.0.1:8080 
 
 rm ./godemo
 

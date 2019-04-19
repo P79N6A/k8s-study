@@ -1,0 +1,23 @@
+version: '3'
+
+# 构建php镜像
+
+services:
+  php:
+    build:
+      context: ./alpine/base
+      dockerfile: Dockerfile
+      args:
+        http_proxy: "proxy"
+        https_proxy: "proxy"
+    image: php-fpm:1.0
+    container_name: php
+    restart: always
+networks:
+  defaults:
+    external:
+      name: host
+
+
+
+

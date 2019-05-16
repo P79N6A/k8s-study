@@ -1,11 +1,7 @@
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
+ARG BASE_ALPINE_IMAGE
+FROM $BASE_ALPINE_IMAGE
 
-FROM alpine:3.8
-
+# php-fpm
 ENV PHPIZE_DEPS \
 		autoconf \
 		dpkg-dev dpkg \
@@ -23,17 +19,20 @@ ENV PHP_EXTRA_CONFIGURE_ARGS --enable-fpm --with-fpm-user=www-data --with-fpm-gr
 ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2"
 ENV PHP_CPPFLAGS="$PHP_CFLAGS"
 ENV PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-ENV GPG_KEYS A917B1ECDA84AEC2B568FED6F50ABC807BD5DCD0 528995BFEDFBA7191D46839EF9BA0ADA31CBD89E 1729F83938DA44E27BA0F4D3DBDB397470D12172
 ENV PHP_VERSION 7.1.28
-ENV PHP_URL="https://www.php.net/get/php-7.1.28.tar.xz/from/this/mirror" PHP_ASC_URL="https://www.php.net/get/php-7.1.28.tar.xz.asc/from/this/mirror"
+ENV PHP_URL="https://www.php.net/get/php-$PHP_VERSION.tar.xz/from/this/mirror" PHP_ASC_URL="https://www.php.net/get/php-$PHP_VERSION.tar.xz.asc/from/this/mirror"
 ENV PHP_SHA256="45131497ec0a947e3f9145c000e8fcc1f86b46518ee3f6810d80efa2d39521e2" PHP_MD5=""
+ENV http_proxy ${http_proxy}
+ENV https_proxy ${https_proxy}
+ENV no_proxy ${no_proxy}
 
-COPY docker-php-source docker-php-ext-* docker-php-entrypoint /usr/local/bin/
+COPY scripts/* /usr/local/bin/
 
 RUN     set -eux; \
+        mkdir -p "/var/log/php-fpm"; \
         mkdir -p "$PHP_INI_DIR/conf.d"; \
-        \
         \
         ## 创建运行用户和运行组
         addgroup -g 82 -S www-data \
@@ -41,19 +40,9 @@ RUN     set -eux; \
         \
         \
         ## 创建工作目录
-        [ ! -d /var/www/html ]; \
-        mkdir -p /var/www/html; \
-        chown www-data:www-data /var/www/html; \
-        chmod 777 /var/www/html; \
-        \
-        \
-        ## 设置时区为上海
-        apk add tzdata && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
-        && echo "Asia/Shanghai" > /etc/timezone \
-        && apk del tzdata; \
-        \
-        \
-        ## 下载php 并且验证php 的正确性
+        [ ! -d /data/www ]; \
+        mkdir -p /data/www; \
+        chmod 777 /data/www; \
         apk add --no-cache --virtual .fetch-deps \
 		ca-certificates \
 		curl \
@@ -61,15 +50,10 @@ RUN     set -eux; \
 		xz \
 		gnupg \
         wget \
-        # https://github.com/docker-library/php/issues/494
 		libressl; \
-        \
-        # 源码地址
         mkdir -p /usr/src; \
         cd /usr/src; \
-        \
         wget -O php.tar.xz "$PHP_URL"; \
-        \
         if [ -n "$PHP_SHA256" ]; then \
             echo "$PHP_SHA256 *php.tar.xz" | sha256sum -c -; \
         fi; \
@@ -80,15 +64,8 @@ RUN     set -eux; \
         if [ -n "$PHP_ASC_URL" ]; then \
             wget  -O php.tar.xz.asc "$PHP_ASC_URL"; \
             export GNUPGHOME="$(mktemp -d)"; \
-            #for key in $GPG_KEYS; do \
-            #    gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
-            #done; \
-            #gpg --batch --verify php.tar.xz.asc php.tar.xz; \
-            #command -v gpgconf > /dev/null && gpgconf --kill all; \
             rm -rf "$GNUPGHOME"; \
         fi; \
-        \
-        apk del --no-network .fetch-deps; \
         \
         \
         ## 安装php 的依赖包
@@ -115,53 +92,26 @@ RUN     set -eux; \
             --build="$gnuArch" \
             --with-config-file-path="$PHP_INI_DIR" \
             --with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
-            \
-            # make sure invalid --configure-flags are fatal errors intead of just warnings
             --enable-option-checking=fatal \
-            \
-            # https://github.com/docker-library/php/issues/439
             --with-mhash \
-            \
-            # --enable-ftp is included here because ftp_ssl_connect() needs ftp to be compiled statically (see https://github.com/docker-library/php/issues/236)
             --enable-ftp \
-            # --enable-mbstring is included here because otherwise there's no way to get pecl to use it properly (see https://github.com/docker-library/php/issues/195)
             --enable-mbstring \
-            # --enable-mysqlnd is included here because it's harder to compile after the fact than extensions are (since it's a plugin for several extensions, not an extension in itself)
             --enable-mysqlnd \
             --enable-soap \
-            \
             --with-curl \
             --with-libedit \
             --with-openssl \
             --with-zlib \
-            \
-            # bundled pcre does not support JIT on s390x
-            # https://manpages.debian.org/stretch/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
             $(test "$gnuArch" = 's390x-linux-gnu' && echo '--without-pcre-jit') \
-            \
             $PHP_EXTRA_CONFIGURE_ARGS \
         && make -j "$(nproc)" \
         && find -type f -name '*.a' -delete \
         && make install \
         && { find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; } \
         && make clean \
-        \
-        # https://github.com/docker-library/php/issues/692 (copy default example "php.ini" files somewhere easily discoverable)
         && cp -v php.ini-* "$PHP_INI_DIR/" \
-        \
         && cd / \
         && docker-php-source delete \
-        \
-        && runDeps="$( \
-            scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
-                | tr ',' '\n' \
-                | sort -u \
-                | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-        )" \
-        && apk add --no-cache $runDeps \
-        \
-        && apk del --no-network .build-deps \
-        \
         && ln -s "$PHP_INSTALL_DIR/bin/pear" /usr/local/bin/pear \
         && ln -s "$PHP_INSTALL_DIR/bin/pecl" /usr/local/bin/pecl \
         && ln -s "$PHP_INSTALL_DIR/bin/php" /usr/local/bin/php \
@@ -172,16 +122,11 @@ RUN     set -eux; \
         && ln -s "$PHP_INSTALL_DIR/bin/phar" /usr/local/bin/phar \
         && ln -s "$PHP_INSTALL_DIR/bin/phar.phar" /usr/local/bin/phar.phar \
         && ln -s "$PHP_INSTALL_DIR/sbin/php-fpm" /usr/local/bin/php-fpm \
-        # https://github.com/docker-library/php/issues/443
         && pecl update-channels \
         && rm -rf /tmp/pear ~/.pearrc \
-        \
-        \
-        ## 配置配置文件信息
         && set -ex \
         && cd "$PHP_INSTALL_DIR/etc" \
         && if [ -d php-fpm.d ]; then \
-            # for some reason, upstream's php-fpm.conf.default has "include=NONE/etc/php-fpm.d/*.conf"
             sed 's!=NONE/!=!g' php-fpm.conf.default | tee php-fpm.conf > /dev/null; \
             cp php-fpm.d/www.conf.default php-fpm.d/www.conf; \
         else \
@@ -211,22 +156,37 @@ RUN     set -eux; \
             echo 'daemonize = no'; \
             echo; \
             echo '[www]'; \
-            echo 'listen = 9000'; \
+            echo 'listen = /var/run/php-fpm.sock'; \
+            echo 'listen.owner = www-data'; \
+            echo 'listen.group = www-data'; \
+            echo 'listen.mode = 0660'; \
         } | tee php-fpm.d/zz-docker.conf \
         && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
         \
-        \
         ## 扩展安装
-        && apk add freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev libxml2-dev \
+        && apk add --no-cache --virtual .build-gd-deps \
+        freetype libpng libjpeg-turbo freetype-dev libpng-dev libjpeg-turbo-dev libxml2-dev \
         && docker-php-ext-install bcmath calendar mysqli pcntl pdo_mysql sockets sysvsem sysvshm wddx  zip \
         && docker-php-ext-configure gd --with-gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-png-dir=/usr/include/ \
         && docker-php-ext-install -j$(nproc) gd \
-        && apk del --no-cache freetype-dev libpng-dev libjpeg-turbo-dev libxml2-dev
+        && pecl install grpc \
+        && pecl install protobuf \
+        && echo "extension=grpc.so" > "$PHP_INI_DIR/conf.d/docker-php-ext-grpc.ini" \
+        && echo "extension=protobuf.so" > "$PHP_INI_DIR/conf.d/docker-php-ext-protobuf.ini" \
+        && apk del --no-network .build-gd-deps \
+        && apk del --no-network .fetch-deps \
+        && apk del --no-network .build-deps \
+        && runDeps="$( \
+                    scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
+                        | tr ',' '\n' \
+                        | sort -u \
+                        | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+                )" \
+        && apk add --no-cache $runDeps \
+        && rm -rf /usr/src \
+        &&  wget -O composer-setup.php  http://getcomposer.org/installer \
+        && php composer-setup.php --install-dir=/usr/bin --filename=composer
 
-ENTRYPOINT ["docker-php-entrypoint"]
+WORKDIR "/data/www"
 
-##<autogenerated>##
-WORKDIR /var/www/htmls
-
-EXPOSE 9000
-CMD ["php-fpm"]
+CMD ["runsvdir", "-P", "/etc/service"]

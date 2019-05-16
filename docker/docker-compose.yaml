@@ -1,0 +1,116 @@
+version: "3.7"
+
+services:
+
+  #　基础镜像alpine
+  base-image:
+    image: ${BASE_ALPINE_IMAGE}
+    build:
+      context: ./base-alpine
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_IMAGE_TAG: ${BASE_ALPINE_IMAGE_TAG}
+
+  # 基础镜像 alpine + 基础 http nginx服务
+  base-http-image:
+    image: ${BASE_ALPINE_HTTP_IMAGE}
+    depends_on:
+      - base-image
+    build:
+      context: ./base-http
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_IMAGE: ${BASE_ALPINE_IMAGE}
+
+  # 基础镜像 php-fpm 镜像
+  php-image:
+    image: ${BASE_PHP_IMAGE}
+    depends_on:
+      - base-http-image
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_HTTP_IMAGE: ${BASE_ALPINE_HTTP_IMAGE}
+
+  # 基础镜像 node 镜像
+  node-image:
+    image: ${BASE_NODE_IMAGE}
+    depends_on:
+      - base-http-image
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_HTTP_IMAGE: ${BASE_ALPINE_HTTP_IMAGE}
+  # 基础镜像 mysql 镜像
+  mysql-image:
+    image: ${BASE_MYSQL_IMAGE}
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        MYSQL_IMAGE_TAG: ${MYSQL_IMAGE_TAG}
+
+  # 基础镜像 gateway 镜像
+  gw-image:
+    image: ${BASE_GW_IMAGE}
+    build:
+      context: ./gw
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_IMAGE: ${BASE_ALPINE_IMAGE}
+
+  # 基础镜像　php job 镜像
+  job-image:
+    image: ${BASE_JOB_IMAGE}
+    build:
+      context: ./job
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        BASE_ALPINE_IMAGE: ${BASE_ALPINE_IMAGE}
+
+  # redis　基本镜像
+  redis-image:
+    image: ${BASE_REDIS_IMAGE}
+    build:
+      context: ./redis
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        REDIS_IMAGE_TAG: ${REDIS_IMAGE_TAG}
+
+  # go-build-image
+  go-build-image:
+    image: ${BASE_GO_BUILD_IMAGE}
+    build:
+      context: ./go-build
+      dockerfile: Dockerfile
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+        no_proxy: ${NO_PROXY}
+        GO_BUILD_IMAGE_TAG: ${GO_BUILD_IMAGE_TAG}

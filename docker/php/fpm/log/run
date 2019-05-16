@@ -1,0 +1,2 @@
+#!/bin/sh -e
+exec chpst -u root svlogd -tt /var/log/php-fpm/
